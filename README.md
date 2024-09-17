@@ -31,6 +31,6 @@ By default, the script will generate a research variant of the iOS SDK, but you 
 
 After running `researchsdk`, be sure to restart Xcode if it's already running.
 
-Create your iOS project in Xcode as usual, or using one of my SRD Xcode templates (coming soon), then select "iOS XX.X (Research)" in the project build settings under "Base SDK".
+Create your iOS project in Xcode as usual, or using one of my [SRD Xcode templates](https://github.com/insidegui/srd-xcode-templates), then select "iOS XX.X (Research)" in the project build settings under "Base SDK".
 
 ![screenshot](./screenshot.jpg)
