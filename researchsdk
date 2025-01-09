@@ -63,7 +63,7 @@ echo ""
 
 echo "Creating Research SDK at $RESEARCH_SDK_PATH"
 
-cp -r "$INPUT_SDK_PATH" "$RESEARCH_SDK_PATH"
+cp -cr "$INPUT_SDK_PATH" "$RESEARCH_SDK_PATH"
 
 if [ ! -d "$RESEARCH_SDK_PATH" ]
 then
@@ -184,19 +184,19 @@ rm -Rf "$RESEARCH_SDK_PATH/usr/include/libxml2" 2>/dev/null
 
 if [[ "$INPUT_SDK_NAME" = "iphoneos" || "$INPUT_SDK_NAME" = "iphonesimulator" ]]; then
     echo "Removing all \"API_UNAVAILABLE(ios)\" tags from SDK headers..."
-    
+
     find "$RESEARCH_SDK_PATH" -type f -name "*.h" -exec sed -i '' '/API_UNAVAILABLE(ios)/d' {} \;
-    
+
     echo ""
-    
+
     echo "Making libSwiftXPC API available on iOS..."
-    
+
     # Remove the "/@available(iOS, unavailable)" annotations from the XPC Swift module
     find "$RESEARCH_SDK_PATH/usr/lib/swift/XPC.swiftmodule" -type f -name '*.swiftinterface' -exec sed -i '' '/@available(iOS, unavailable)/d' {} \;
-    
+
     # Add availability annotation for iOS where needed
     find "$RESEARCH_SDK_PATH/usr/lib/swift/XPC.swiftmodule" -type f -name '*.swiftinterface' -exec sed -i '' 's/@available(macOS 14.0, macCatalyst 17.0, \*)/@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, \*)/g' {} \;
-    
+
     echo ""
 fi
 
