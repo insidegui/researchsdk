@@ -24,6 +24,13 @@ else
     INPUT_SDK_NAME="$1"
 fi
 
+SDKS_DIR=${RESEARCH_SDKS_DIR:-$HOME/Developer/SDKs}
+
+if [ ! -d "${SDKS_DIR}" ]; then
+    echoRed "ERROR: Research SDKS directory not found at '${SDKS_DIR}'.\nPlease create that directory or set the RESEARCH_SDKS_DIR environment variable to a custom directory path.\n"
+    exit 1
+fi
+
 INPUT_SDK_PATH_SYMLINK=$(xcrun --show-sdk-path --sdk $INPUT_SDK_NAME)
 
 # Resolve symlink
@@ -38,8 +45,11 @@ fi
 INPUT_SDK_PATH_NO_EXT=${INPUT_SDK_PATH%.sdk}
 INPUT_SDK_PATH_SYMLINK_NO_EXT=${INPUT_SDK_PATH_SYMLINK%.sdk}
 
-RESEARCH_SDK_PATH_SYMLINK="$INPUT_SDK_PATH_SYMLINK_NO_EXT.internal.sdk"
-RESEARCH_SDK_PATH="$INPUT_SDK_PATH_NO_EXT.internal.sdk"
+INPUT_SDK_NAME_NO_EXT=$(basename "$INPUT_SDK_PATH_NO_EXT")
+INPUT_SDK_NAME_SYMLINK_NO_EXT=$(basename "$INPUT_SDK_PATH_SYMLINK_NO_EXT")
+
+RESEARCH_SDK_PATH_SYMLINK="$SDKS_DIR/$INPUT_SDK_NAME_SYMLINK_NO_EXT.internal.sdk"
+RESEARCH_SDK_PATH="$SDKS_DIR/$INPUT_SDK_NAME_NO_EXT.internal.sdk"
 
 echo "Input SDK symlink is at $INPUT_SDK_PATH_SYMLINK"
 echo "Input SDK is at $INPUT_SDK_PATH"
