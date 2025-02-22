@@ -4,6 +4,16 @@
 
 This repository provides a `researchsdk` script that can be used to generate a "Research" variant of the iOS SDK for use with [SRD](https://security.apple.com/research-device/) development.
 
+## Xcode 16.3 Beta Notice
+
+The identifier used by the generated SDKs is no longer recognized as of Xcode 16.3 beta 1, resulting in an `unable to find sdk` error message.
+
+To work around that, change the `SDKROOT` build setting to the full path of the research SDK, for example:
+
+```
+SDKROOT = /Applications/Xcode-beta.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.internal.sdk
+```
+
 ## Motivation
 
 I like to use Xcode for all development, but when developing code to run on the Security Research Device, it can be difficult to do all development within Xcode, since it requires adhoc signing and frequent use of SPI or API that's marked unavailable for the iOS SDK.
