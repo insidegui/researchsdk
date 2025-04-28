@@ -4,7 +4,7 @@
 
 This repository provides a `researchsdk` script that can be used to generate a "Research" variant of the iOS SDK for use with [SRD](https://security.apple.com/research-device/) development.
 
-## Xcode 16.3 Beta Notice
+## Xcode 16.3 And Later Notice
 
 The identifier used by the generated SDKs is no longer recognized as of Xcode 16.3 beta 1, resulting in an `unable to find sdk` error message.
 
@@ -12,6 +12,12 @@ To work around that, change the `SDKROOT` build setting to the full path of the 
 
 ```
 SDKROOT = /Applications/Xcode-beta.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.4.internal.sdk
+```
+
+The script will print out the path after running, and you can obtain the path at any time by running:
+
+```bash
+xcrun --show-sdk-path --sdk iphoneos.internal
 ```
 
 ## Motivation

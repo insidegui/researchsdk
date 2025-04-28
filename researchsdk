@@ -228,3 +228,8 @@ echo ""
 echoGreen "Research SDK created successfully"
 
 echo ""
+
+echo "You can copy and paste the following into your project settings to enable the new SDK:"
+echo ""
+echo "SDKROOT = '$RESEARCH_SDK_PATH'"
+echo ""
