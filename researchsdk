@@ -185,7 +185,7 @@ rm -Rf "$RESEARCH_SDK_PATH/usr/include/libxml2" 2>/dev/null
 if [[ "$INPUT_SDK_NAME" = "iphoneos" || "$INPUT_SDK_NAME" = "iphonesimulator" ]]; then
     echo "Removing all \"API_UNAVAILABLE(ios)\" tags from SDK headers..."
 
-    find "$RESEARCH_SDK_PATH" -type f -name "*.h" -exec sed -i '' '/API_UNAVAILABLE(ios)/d' {} \;
+    find "$RESEARCH_SDK_PATH" -type f -name "*.h" -exec sed -i '' -e 's/ API_UNAVAILABLE(ios, watchos, tvos)//g' -e 's/ API_UNAVAILABLE(ios)//g' -e 's/ API_UNAVAILABLE(ios, tvos, watchos)//g' {} \;
 
     echo ""
 
