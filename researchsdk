@@ -179,6 +179,33 @@ function appendStringToPlistProperty {
     fi
 }
 
+echo "## SDKSettings.json"
+echo ""
+appendStringToJSONProperty "DisplayName" " Research"
+appendStringToJSONProperty "MinimalDisplayName" " Research"
+# I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
+appendStringToJSONProperty "CanonicalName" ".internal"
+setJSONProperty "DefaultProperties.ENTITLEMENTS_REQUIRED" "NO"
+setJSONProperty "DefaultProperties.AD_HOC_CODE_SIGNING_ALLOWED" "YES"
+setJSONProperty "DefaultProperties.CODE_SIGNING_REQUIRED" "NO"
+setJSONProperty "DefaultProperties.CODE_SIGN_IDENTITY" "-"
+
+echo ""
+
+echo "## SDKSettings.plist"
+echo ""
+
+appendStringToPlistProperty "DisplayName" " Research"
+appendStringToPlistProperty "MinimalDisplayName" " Research"
+# I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
+appendStringToPlistProperty "CanonicalName" ".internal"
+setPlistProperty ":DefaultProperties:ENTITLEMENTS_REQUIRED" "NO"
+setPlistProperty ":DefaultProperties:AD_HOC_CODE_SIGNING_ALLOWED" "YES"
+setPlistProperty ":DefaultProperties:CODE_SIGNING_REQUIRED" "NO"
+setPlistProperty ":DefaultProperties:CODE_SIGN_IDENTITY" "-"
+
+echo ""
+
 # This fixes "duplicate module definition libxml2" error
 rm -Rf "$RESEARCH_SDK_PATH/usr/include/libxml2" 2>/dev/null
 
@@ -197,33 +224,11 @@ if [[ "$INPUT_SDK_NAME" = "iphoneos" || "$INPUT_SDK_NAME" = "iphonesimulator" ]]
     # Add availability annotation for iOS where needed
     find "$RESEARCH_SDK_PATH/usr/lib/swift/XPC.swiftmodule" -type f -name '*.swiftinterface' -exec sed -i '' 's/@available(macOS 14.0, macCatalyst 17.0, \*)/@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, \*)/g' {} \;
 
+    # Add availability annotation for iOS where needed (iOS 26)
+    find "$RESEARCH_SDK_PATH/usr/lib/swift/XPC.swiftmodule" -type f -name '*.swiftinterface' -exec sed -i '' 's/@available(macOS 26.0, macCatalyst 26.0, \*)/@available(macOS 26.0, macCatalyst 26.0, iOS 26.0, \*)/g' {} \;
+
     echo ""
 fi
-
-echo "## SDKSettings.json"
-echo ""
-appendStringToJSONProperty "DisplayName" " (Research)"
-# I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
-appendStringToJSONProperty "CanonicalName" ".internal"
-setJSONProperty "DefaultProperties.ENTITLEMENTS_REQUIRED" "NO"
-setJSONProperty "DefaultProperties.AD_HOC_CODE_SIGNING_ALLOWED" "YES"
-setJSONProperty "DefaultProperties.CODE_SIGNING_REQUIRED" "NO"
-setJSONProperty "DefaultProperties.CODE_SIGN_IDENTITY" "-"
-
-echo ""
-
-echo "## SDKSettings.plist"
-echo ""
-
-appendStringToPlistProperty "DisplayName" " (Research)"
-# I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
-appendStringToPlistProperty "CanonicalName" ".internal"
-setPlistProperty ":DefaultProperties:ENTITLEMENTS_REQUIRED" "NO"
-setPlistProperty ":DefaultProperties:AD_HOC_CODE_SIGNING_ALLOWED" "YES"
-setPlistProperty ":DefaultProperties:CODE_SIGNING_REQUIRED" "NO"
-setPlistProperty ":DefaultProperties:CODE_SIGN_IDENTITY" "-"
-
-echo ""
 
 echoGreen "Research SDK created successfully"
 
