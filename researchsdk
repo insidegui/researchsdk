@@ -16,8 +16,35 @@ function echoGreen {
     echo "\033[0;32m$1\033[0m"
 }
 
+
+if [ ! -z $1 ]
+then
+    if [ ${1} = "--help" ] || [ ${1} = "-h" ]
+    then
+        echo "Usage: researchsdk [sdk name] [--patch-original]\n"
+        echo "Specify --patch-original to also modify SDKSettings files in the original SDK to allow adhoc signing\n"
+        exit 64
+    fi
+fi
+
+PATCH_ORIGINAL=0
+if [ ! -z $1 ]
+then
+    if [ ${1} = "--patch-original" ]
+    then
+        PATCH_ORIGINAL=1
+    fi
+fi
+if [ ! -z $2 ]
+then
+    if [ ${2} = "--patch-original" ]
+    then
+        PATCH_ORIGINAL=1
+    fi
+fi
+
 # Allow SDK name to be passed as an argument, use iphoneos as default
-if [ -z "$1" ]
+if [ -z "$1" ] || [ ${1} = "--patch-original" ]
 then
     INPUT_SDK_NAME="iphoneos"
 else
@@ -45,6 +72,11 @@ echo "Input SDK symlink is at $INPUT_SDK_PATH_SYMLINK"
 echo "Input SDK is at $INPUT_SDK_PATH"
 echo "Research SDK will be created at $RESEARCH_SDK_PATH"
 echo "Research SDK symlink will be created at $RESEARCH_SDK_PATH_SYMLINK"
+
+if [ $PATCH_ORIGINAL -eq 1 ]
+then
+    echo "Input SDKSettings will also be patched to allow adhoc signing (--patch-original)"
+fi
 
 echo ""
 
@@ -88,14 +120,18 @@ echo ""
 echo "Research SDK will be available at $RESEARCH_SDK_PATH"
 echo ""
 
+INPUT_SETTINGS_JSON_PATH="$INPUT_SDK_PATH/SDKSettings.json"
+INPUT_SETTINGS_PLIST_PATH="$INPUT_SDK_PATH/SDKSettings.plist"
+
 SETTINGS_JSON_PATH="$RESEARCH_SDK_PATH/SDKSettings.json"
 SETTINGS_PLIST_PATH="$RESEARCH_SDK_PATH/SDKSettings.plist"
 
 function setJSONProperty {
     KEY=$1
     VALUE=$2
+    FILEPATH=$3
 
-    ORIGINAL_VALUE=$(jj -i "$SETTINGS_JSON_PATH" "$KEY")
+    ORIGINAL_VALUE=$(jj -i "$FILEPATH" "$KEY")
 
     if [ -z "$ORIGINAL_VALUE" ]
     then
@@ -107,7 +143,7 @@ function setJSONProperty {
     if ! [[ $ORIGINAL_VALUE == "$VALUE" ]]; then
         echo "Setting $KEY to '$VALUE'"
 
-        jj -i "$SETTINGS_JSON_PATH" -v "$VALUE" -O "$KEY" -o "$SETTINGS_JSON_PATH"
+        jj -i "$FILEPATH" -v "$VALUE" -O "$KEY" -o "$FILEPATH"
     else
         echo "$KEY is already '$ORIGINAL_VALUE'"
     fi
@@ -116,8 +152,9 @@ function setJSONProperty {
 function appendStringToJSONProperty {
     KEY=$1
     VALUE=$2
+    FILEPATH=$3
 
-    ORIGINAL_VALUE=$(jj -i "$SETTINGS_JSON_PATH" "$KEY")
+    ORIGINAL_VALUE=$(jj -i "$FILEPATH" "$KEY")
 
     if [ -z "$ORIGINAL_VALUE" ]
     then
@@ -129,7 +166,7 @@ function appendStringToJSONProperty {
     if ! [[ $ORIGINAL_VALUE == *"$VALUE"* ]]; then
         UPDATED_VALUE="$ORIGINAL_VALUE$VALUE"
 
-        setJSONProperty "$KEY" "$UPDATED_VALUE"
+        setJSONProperty "$KEY" "$UPDATED_VALUE" "$FILEPATH"
     else
         echo "$KEY is already '$ORIGINAL_VALUE'"
     fi
@@ -138,8 +175,9 @@ function appendStringToJSONProperty {
 function setPlistProperty {
     KEY=$1
     VALUE=$2
+    FILEPATH=$3
 
-    ORIGINAL_VALUE=$(/usr/libexec/PlistBuddy -c "Print $KEY" "$SETTINGS_PLIST_PATH")
+    ORIGINAL_VALUE=$(/usr/libexec/PlistBuddy -c "Print $KEY" "$FILEPATH")
 
     if [ -z "$ORIGINAL_VALUE" ]
     then
@@ -151,7 +189,7 @@ function setPlistProperty {
     if ! [[ $ORIGINAL_VALUE == "$VALUE" ]]; then
         echo "Setting $KEY to '$VALUE'"
 
-        /usr/libexec/PlistBuddy -c "Set $KEY $VALUE" "$SETTINGS_PLIST_PATH"
+        /usr/libexec/PlistBuddy -c "Set $KEY $VALUE" "$FILEPATH"
     else
         echo "$KEY is already '$ORIGINAL_VALUE'"
     fi
@@ -160,8 +198,9 @@ function setPlistProperty {
 function appendStringToPlistProperty {
     KEY=$1
     VALUE=$2
+    FILEPATH=$3
 
-    ORIGINAL_VALUE=$(/usr/libexec/PlistBuddy -c "Print $KEY" "$SETTINGS_PLIST_PATH")
+    ORIGINAL_VALUE=$(/usr/libexec/PlistBuddy -c "Print $KEY" "$FILEPATH")
 
     if [ -z "$ORIGINAL_VALUE" ]
     then
@@ -173,38 +212,61 @@ function appendStringToPlistProperty {
     if ! [[ $ORIGINAL_VALUE == *"$VALUE"* ]]; then
         UPDATED_VALUE="$ORIGINAL_VALUE$VALUE"
 
-        setPlistProperty "$KEY" "$UPDATED_VALUE"
+        setPlistProperty "$KEY" "$UPDATED_VALUE" "$FILEPATH"
     else
         echo "$KEY is already '$ORIGINAL_VALUE'"
     fi
 }
 
-echo "## SDKSettings.json"
-echo ""
-appendStringToJSONProperty "DisplayName" " Research"
-appendStringToJSONProperty "MinimalDisplayName" " Research"
-# I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
-appendStringToJSONProperty "CanonicalName" ".internal"
-setJSONProperty "DefaultProperties.ENTITLEMENTS_REQUIRED" "NO"
-setJSONProperty "DefaultProperties.AD_HOC_CODE_SIGNING_ALLOWED" "YES"
-setJSONProperty "DefaultProperties.CODE_SIGNING_REQUIRED" "NO"
-setJSONProperty "DefaultProperties.CODE_SIGN_IDENTITY" "-"
+function applySDKSettingsPatches {
+    JSONPATH=$1
+    PLISTPATH=$2
+    TITLE=$3
+    CHANGE_IDENTIFIERS=$4
+    
+    echo "## $TITLE SDKSettings.json"
+    echo ""
+    
+    if [ $CHANGE_IDENTIFIERS -eq 1 ]
+    then
+        appendStringToJSONProperty "DisplayName" " Research" "$JSONPATH"
+        appendStringToJSONProperty "MinimalDisplayName" " Research" "$JSONPATH"
+        # I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
+        appendStringToJSONProperty "CanonicalName" ".internal" "$JSONPATH"
+    fi
+    
+    setJSONProperty "DefaultProperties.ENTITLEMENTS_REQUIRED" "NO" "$JSONPATH"
+    setJSONProperty "DefaultProperties.AD_HOC_CODE_SIGNING_ALLOWED" "YES" "$JSONPATH"
+    setJSONProperty "DefaultProperties.CODE_SIGNING_REQUIRED" "NO" "$JSONPATH"
+    setJSONProperty "DefaultProperties.CODE_SIGN_IDENTITY" "-" "$JSONPATH"
+    
+    echo ""
+    
+    echo "## $TITLE SDKSettings.plist"
+    echo ""
+    
+    if [ $CHANGE_IDENTIFIERS -eq 1 ]
+    then
+        appendStringToPlistProperty "DisplayName" " Research" "$PLISTPATH"
+        appendStringToPlistProperty "MinimalDisplayName" " Research" "$PLISTPATH"
+        # I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
+        appendStringToPlistProperty "CanonicalName" ".internal" "$PLISTPATH"
+    fi
+    
+    setPlistProperty ":DefaultProperties:ENTITLEMENTS_REQUIRED" "NO" "$PLISTPATH"
+    setPlistProperty ":DefaultProperties:AD_HOC_CODE_SIGNING_ALLOWED" "YES" "$PLISTPATH"
+    setPlistProperty ":DefaultProperties:CODE_SIGNING_REQUIRED" "NO" "$PLISTPATH"
+    setPlistProperty ":DefaultProperties:CODE_SIGN_IDENTITY" "-" "$PLISTPATH"
+    
+    echo ""
+}
 
-echo ""
+applySDKSettingsPatches "$SETTINGS_JSON_PATH" "$SETTINGS_PLIST_PATH" "Research -" 1
 
-echo "## SDKSettings.plist"
-echo ""
-
-appendStringToPlistProperty "DisplayName" " Research"
-appendStringToPlistProperty "MinimalDisplayName" " Research"
-# I tried using ".research" as the suffix, but Xcode will only recognize ".internal"
-appendStringToPlistProperty "CanonicalName" ".internal"
-setPlistProperty ":DefaultProperties:ENTITLEMENTS_REQUIRED" "NO"
-setPlistProperty ":DefaultProperties:AD_HOC_CODE_SIGNING_ALLOWED" "YES"
-setPlistProperty ":DefaultProperties:CODE_SIGNING_REQUIRED" "NO"
-setPlistProperty ":DefaultProperties:CODE_SIGN_IDENTITY" "-"
-
-echo ""
+if [ $PATCH_ORIGINAL -eq 1 ]
+then
+    applySDKSettingsPatches "$INPUT_SETTINGS_JSON_PATH" "$INPUT_SETTINGS_PLIST_PATH" "Original -" 0
+fi
 
 # This fixes "duplicate module definition libxml2" error
 rm -Rf "$RESEARCH_SDK_PATH/usr/include/libxml2" 2>/dev/null
